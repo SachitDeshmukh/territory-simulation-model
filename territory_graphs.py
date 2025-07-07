@@ -19,3 +19,7 @@
     # percentage_data = territory_results["Output"]
     # avg_perc_data = territory_results["Avg_Perc_Burned"]
     # gen_graph(density_data, percentage_data, avg_perc_data)  # Generate result graph
+
+def test_function(test_data):
+    test_data += 1
+    print(f"This is a test function to obtain the data points {test_data}.")

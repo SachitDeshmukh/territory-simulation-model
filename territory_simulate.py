@@ -1,6 +1,3 @@
-# Set logging format and level
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
 # Function to introduce a delay
 def rest():
     time.sleep(3)
@@ -27,6 +24,8 @@ class NetLogoSim:
         self.params = parameters  # Store parameter combinations
         self.runs = runs  # Define the number of simulation runs
         self.max_ticks = ticks
+        self.tick_start = 0
+        self.tick_step = 50
 
     # Run simulation for a parameter combination
     def params_stability(self, combo, iter):
@@ -47,7 +46,7 @@ class NetLogoSim:
                 "Green-Count-start": combo.get("num-blue-clan")
                 }
 
-            for tick_target in range(0, self.max_ticks, 50):
+            for tick_target in range(self.tick_start, self.max_ticks, self.tick_step):
                 while netlogo.report("ticks") < tick_target and netlogo.report("count turtles") > 0:
                     netlogo.command("go")
                 if netlogo.report("count turtles") > 0:
@@ -73,7 +72,7 @@ class NetLogoSim:
     def filter_params(self, results):
         results = [res for res in results if res is not None]
         result_data = pd.DataFrame(results)
-        for i in range(0, self.max_ticks, 50):
+        for i in range(self.tick_start, self.max_ticks, self.tick_step):
             green_avg_territory = result_data.groupby("Combo")[f"Green-Territory-{i}"].mean().reset_index()
             green_avg_territory.rename(columns={f"Green-Territory-{i}": f"Green-Avg-Territory-{i}"}, inplace=True)
             blue_avg_territory = result_data.groupby("Combo")[f"Blue-Territory-{i}"].mean().reset_index()
@@ -83,7 +82,7 @@ class NetLogoSim:
         return result_data
 
 # Main execution function
-def main():
+def simulate():
     os.chdir(r"C:\Users\Sachit Deshmukh\Documents\Python Scripts")  # Change working directory
 
     if not jpype.isJVMStarted():
@@ -92,8 +91,8 @@ def main():
     try:
         logging.info(f"Starting iteration...")
         input_params = {
-            "num-green-clan": [15, 20, 25, 30],
-            "num-blue-clan": [15, 20, 25, 30],
+            "num-green-clan": [15, 20],
+            "num-blue-clan": [15, 20],
             "green-hostile?": [False],
             "yellow-hostile?": [False],
             "blue-hostile?": [False],
@@ -101,7 +100,7 @@ def main():
         }
         param_combinations = gen_param_combos(input_params)
         start_time_temp = datetime.now()
-        simulation = NetLogoSim(param_combinations, runs=20, ticks=301)  # Initialize simulation object
+        simulation = NetLogoSim(param_combinations, runs=5, ticks=201)  # Initialize simulation object
         iter_data = Parallel(n_jobs=6, backend="multiprocessing")(
             delayed(simulation.params_stability)(combo, x) for combo in simulation.params for x in range(simulation.runs)
         )  # Run simulations in parallel
@@ -118,6 +117,3 @@ def main():
 
     territory_results = simulation.filter_params(iter_data)
     save_data(territory_results, backup_file_name="Territory_output")
-
-if __name__ == "__main__":
-    main()  # Execute main function
