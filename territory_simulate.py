@@ -41,7 +41,7 @@ class NetLogoSim:
     # Run simulation for a parameter combination
     def params_stability(self, combo, iter):
         netlogo = NetLogoLink(gui=False, netlogo_home=r"C:\Users\Sachit Deshmukh\AppData\Local\NetLogo")
-        netlogo.load_model(r"C:\Users\Sachit Deshmukh\Documents\Python Scripts\12-Territory-model-with-multiple-clans.nlogo")
+        netlogo.load_model(r"C:\Users\Sachit Deshmukh\Documents\Python Scripts\Territory-model-Ishwari\12-Territory-model-with-multiple-clans.nlogo")
 
         combo_serial = self.params.index(combo)
         try:
