@@ -1,0 +1,144 @@
+# Set logging format and level
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+# Function to introduce a delay
+def rest():
+    time.sleep(3)
+
+# Generate all possible parameter combinations
+def gen_param_combos(all_params):
+    return [dict(zip(all_params.keys(), values)) for values in product(*all_params.values())]
+
+# Save simulation data in CSV and Excel formats
+def save_data(data, backup_file_name):
+    data.to_csv(f"{backup_file_name}.csv")
+
+    xlsx_file_name = f"NETLOGO_Territory-12_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+
+    mode = 'a' if os.path.exists(xlsx_file_name) else 'w'
+    with pd.ExcelWriter(xlsx_file_name, mode=mode, engine='openpyxl') as writer:
+        data.to_excel(writer, sheet_name=datetime.now().strftime("%H-%M-%S"), index=False)
+
+    logging.info(f"RESULTED SAVED TO {xlsx_file_name}")
+
+# Generate scatter plot for results visualization
+"""def gen_graph(X_data, Y_data_1, Y_data_2):
+    png_file_name = f"NETLOGO_Territory-12_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.png"
+    plt.figure(figsize=(12, 6))
+    sns.scatterplot(x=X_data, y=Y_data_1, hue=Y_data_1, marker="o")
+    sns.scatterplot(x=X_data, y=Y_data_2, color="black", marker="X")
+    plt.xticks(X_data)
+    plt.xlabel("DENSITY OF TREES")
+    plt.ylabel("PERCENTAGE OF TREES BURNED")
+    plt.title("FUNCTION OF DENSITY OVER TREES BURNED - VERSION 2")
+    plt.legend(title="Percentage Burned")
+    plt.savefig(png_file_name, dpi=300, bbox_inches='tight')
+    plt.show()
+    plt.pause(5)
+    plt.close()
+    logging.info(f"Scatter Plot generated. Graph file saved to {png_file_name}")"""
+
+# NetLogo simulation class handling execution
+class NetLogoSim:
+    def __init__(self, parameters, runs, ticks):
+        self.params = parameters  # Store parameter combinations
+        self.runs = runs  # Define the number of simulation runs
+        self.max_ticks = ticks
+
+    # Run simulation for a parameter combination
+    def params_stability(self, combo, iter):
+        netlogo = NetLogoLink(gui=False, netlogo_home=r"C:\Users\Sachit Deshmukh\AppData\Local\NetLogo")
+        netlogo.load_model(r"C:\Users\Sachit Deshmukh\Documents\Python Scripts\12-Territory-model-with-multiple-clans.nlogo")
+
+        combo_serial = self.params.index(combo)
+        try:
+            for param, value in combo.items():
+                netlogo.command(f"set {param} {value}")  # Set model parameters
+
+            netlogo.command("setup")  # Initialize simulation
+
+            results = {
+                "Combo": combo_serial,
+                "Iteration": iter+1,
+                "Blue-Count-start": combo.get("num-green-clan"),
+                "Green-Count-start": combo.get("num-blue-clan")
+                }
+
+            for tick_target in range(0, self.max_ticks, 50):
+                while netlogo.report("ticks") < tick_target and netlogo.report("count turtles") > 0:
+                    netlogo.command("go")
+                if netlogo.report("count turtles") > 0:
+                    results[f"Green-Territory-{tick_target}"] = netlogo.report("count green-patches")
+                    results[f"Blue-Territory-{tick_target}"] = netlogo.report("count blue-patches")
+                else:
+                    # If all turtles are dead before this tick, record NA
+                    results[f"Green-Territory-{tick_target}"] = np.nan
+                    results[f"Blue-Territory-{tick_target}"] = np.nan
+            
+            logging.info(f"Combination {combo_serial} iteration {iter+1} complete.")
+        
+        except Exception as e:
+            logging.error(f"Simulation error with params {combo}: {e}")
+            return None  # Ensure failed runs don’t corrupt output
+        
+        finally:
+            netlogo.kill_workspace()  # Close NetLogo workspace
+
+        return results
+
+    # Filter valid results and compute averages
+    def filter_params(self, results):
+        results = [res for res in results if res is not None]
+        result_data = pd.DataFrame(results)
+        for i in range(0, self.max_ticks, 50):
+            green_avg_territory = result_data.groupby("Combo")[f"Green-Territory-{i}"].mean().reset_index()
+            green_avg_territory.rename(columns={f"Green-Territory-{i}": f"Green-Avg-Territory-{i}"}, inplace=True)
+            blue_avg_territory = result_data.groupby("Combo")[f"Blue-Territory-{i}"].mean().reset_index()
+            blue_avg_territory.rename(columns={f"Blue-Territory-{i}": f"Blue-Avg-Territory-{i}"}, inplace=True)
+            result_data = result_data.merge(green_avg_territory, on="Combo").merge(blue_avg_territory, on="Combo")
+        # result_data = result_data.sort_values(by="Density")
+        return result_data
+
+# Main execution function
+def main():
+    os.chdir(r"C:\Users\Sachit Deshmukh\Documents\Python Scripts")  # Change working directory
+
+    if not jpype.isJVMStarted():
+        jpype.startJVM()  # Start Java Virtual Machine
+
+    try:
+        logging.info(f"Starting iteration...")
+        input_params = {
+            "num-green-clan": [15, 20, 25, 30],
+            "num-blue-clan": [15, 20, 25, 30],
+            "green-hostile?": [False],
+            "yellow-hostile?": [False],
+            "blue-hostile?": [False],
+            "red-hostile?": [False]
+        }
+        param_combinations = gen_param_combos(input_params)
+        start_time_temp = datetime.now()
+        simulation = NetLogoSim(param_combinations, runs=20, ticks=301)  # Initialize simulation object
+        iter_data = Parallel(n_jobs=6, backend="multiprocessing")(
+            delayed(simulation.params_stability)(combo, x) for combo in simulation.params for x in range(simulation.runs)
+        )  # Run simulations in parallel
+        end_time_temp = datetime.now()
+        time.sleep(3)
+        total_time = (end_time_temp - start_time_temp).total_seconds()
+        logging.info(f"Time taken: {total_time}.")
+
+    finally:
+        logging.info("CLEANING UP RESOURCES...")
+        jpype.shutdownJVM()  # Shut down Java Virtual Machine
+
+    logging.info("ALL SIMULATIONS COMPLETE.")
+
+    territory_results = simulation.filter_params(iter_data)
+    save_data(territory_results, backup_file_name="Territory_output")
+    # density_data = territory_results["Density"]
+    # percentage_data = territory_results["Output"]
+    # avg_perc_data = territory_results["Avg_Perc_Burned"]
+    # gen_graph(density_data, percentage_data, avg_perc_data)  # Generate result graph
+
+if __name__ == "__main__":
+    main()  # Execute main function
