@@ -94,7 +94,7 @@ class NetLogoSim:
 
 # Main execution function
 def simulate():
-    os.chdir(r"C:\Users\Sachit Deshmukh\Documents\Python Scripts")  # Change working directory
+    os.chdir(r"C:\Users\Sachit Deshmukh\Documents\Python Scripts\Territory-model-Ishwari")  # Change working directory
 
     if not jpype.isJVMStarted():
         jpype.startJVM()  # Start Java Virtual Machine
