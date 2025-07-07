@@ -1,3 +1,7 @@
+import matplotlib.pyplot as plt  # Plotting graphs with Matplotlib
+import seaborn as sns  # Enhanced visualization with Seaborn
+import logging  # Logging setup for monitoring execution
+
 # Generate scatter plot for results visualization
 """def gen_graph(X_data, Y_data_1, Y_data_2):
     png_file_name = f"NETLOGO_Territory-12_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.png"
