@@ -8,11 +8,20 @@ import territory_simulate
 import territory_graphs
 
 def main():
-    SIM_DONE = True
-    GEN_GRAPH = True
+    SIM_DONE = True # user to define before each simulation
+    GEN_GRAPH = True # user to define before each simulation
 
-    results = territory_simulate.simulate() if (SIM_DONE == GEN_GRAPH) or SIM_DONE else int(3)
-    territory_graphs.test_function(results) if GEN_GRAPH else logging.info("The graphs were not generated.")
+    while GEN_GRAPH:
+        if not SIM_DONE:
+            results = territory_simulate.simulate() # simulate the NETLOGO model if not simulated before
+        else:
+            results = territory_graphs.load_data() # load pre-existing data from Excel sheet
+        territory_graphs.test_function(results)
+        GEN_GRAPH = False
+    else:
+        if not SIM_DONE:
+            territory_simulate.simulate()
+        logging.info("The graphs were not generated.")
 
 if __name__ == "__main__":
     main()
