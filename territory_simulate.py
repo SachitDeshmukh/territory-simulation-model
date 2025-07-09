@@ -9,6 +9,16 @@ from itertools import product  # Cartesian product for param combinations
 from joblib import Parallel, delayed  # Parallel execution for simulations
 from pynetlogo import NetLogoLink  # Interface for NetLogo simulations
 
+MAIN_DIR = r"C:\Users\Sachit Deshmukh\Documents\Python Scripts\Territory-model-Ishwari"
+INPUT_PARAMS = {
+            "num-green-clan": [15, 20, 25, 30],
+            "num-blue-clan": [15, 20, 25, 30],
+            "green-hostile?": [False],
+            "yellow-hostile?": [False],
+            "blue-hostile?": [False],
+            "red-hostile?": [False]
+        }
+
 # Function to introduce a delay
 def rest():
     time.sleep(3)
@@ -94,24 +104,16 @@ class NetLogoSim:
 
 # Main execution function
 def simulate():
-    os.chdir(r"C:\Users\Sachit Deshmukh\Documents\Python Scripts\Territory-model-Ishwari")  # Change working directory
+    os.chdir(MAIN_DIR)  # Change working directory to main directory
 
     if not jpype.isJVMStarted():
         jpype.startJVM()  # Start Java Virtual Machine
 
     try:
         logging.info(f"Starting iteration...")
-        input_params = {
-            "num-green-clan": [15, 20],
-            "num-blue-clan": [15, 20],
-            "green-hostile?": [False],
-            "yellow-hostile?": [False],
-            "blue-hostile?": [False],
-            "red-hostile?": [False]
-        }
-        param_combinations = gen_param_combos(input_params)
+        param_combinations = gen_param_combos(INPUT_PARAMS)
         start_time_temp = datetime.now()
-        simulation = NetLogoSim(param_combinations, runs=5, ticks=201)  # Initialize simulation object
+        simulation = NetLogoSim(param_combinations, runs=20, ticks=301)  # Initialize simulation object
         iter_data = Parallel(n_jobs=6, backend="multiprocessing")(
             delayed(simulation.params_stability)(combo, x) for combo in simulation.params for x in range(simulation.runs)
         )  # Run simulations in parallel
@@ -128,3 +130,5 @@ def simulate():
 
     territory_results = simulation.filter_params(iter_data)
     save_data(territory_results, backup_file_name="Territory_output")
+
+    return territory_results
