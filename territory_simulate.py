@@ -28,14 +28,14 @@ def gen_param_combos(all_params):
     return [dict(zip(all_params.keys(), values)) for values in product(*all_params.values())]
 
 # Save simulation data in CSV and Excel formats
-def save_data(data, backup_file_name):
+def save_data(data, backup_file_name, sheet_prefix):
     data.to_csv(f"{backup_file_name}.csv")
 
     xlsx_file_name = f"NETLOGO_Territory-12_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
 
     mode = 'a' if os.path.exists(xlsx_file_name) else 'w'
     with pd.ExcelWriter(xlsx_file_name, mode=mode, engine='openpyxl') as writer:
-        data.to_excel(writer, sheet_name=datetime.now().strftime("%H-%M-%S"), index=False)
+        data.to_excel(writer, sheet_name=f"{sheet_prefix}_{datetime.now().strftime("%H-%M-%S")}", index=False)
 
     logging.info(f"RESULTED SAVED TO {xlsx_file_name}")
 
@@ -98,9 +98,16 @@ class NetLogoSim:
             green_avg_territory.rename(columns={f"Green-Territory-{i}": f"Green-Avg-Territory-{i}"}, inplace=True)
             blue_avg_territory = result_data.groupby("Combo")[f"Blue-Territory-{i}"].mean().reset_index()
             blue_avg_territory.rename(columns={f"Blue-Territory-{i}": f"Blue-Avg-Territory-{i}"}, inplace=True)
-            result_data = result_data.merge(green_avg_territory, on="Combo").merge(blue_avg_territory, on="Combo")
-        # result_data = result_data.sort_values(by="Density")
+            result_data = result_data.merge(green_avg_territory, on="Combo").merge(blue_avg_territory, on="Combo")         
         return result_data
+    
+    def clean_data_ratio(self, dataset):
+        dataset = pd.DataFrame(dataset)
+        dataset = dataset.drop_duplicates(subset=["Combo", "Blue-Count-start", "Green-Count-start"])
+        clean_data = dataset[["Combo", "Blue-Count-start", "Green-Count-start"]].copy()
+        for i in range(self.tick_start, self.max_ticks, self.tick_step):
+            clean_data[f"{i}_avg_ratio"] = (dataset[f"Green-Avg-Territory-{i}"]/dataset[f"Blue-Avg-Territory-{i}"]).fillna(1.0)
+        return clean_data
 
 # Main execution function
 def simulate():
@@ -129,6 +136,9 @@ def simulate():
     logging.info("ALL SIMULATIONS COMPLETE.")
 
     territory_results = simulation.filter_params(iter_data)
-    save_data(territory_results, backup_file_name="Territory_output")
+    save_data(territory_results, backup_file_name="Territory_output_raw", sheet_prefix="RAW")
 
-    return territory_results
+    clean_results = simulation.clean_data_ratio(territory_results)
+    save_data(clean_results, backup_file_name="Territory_output_clean", sheet_prefix="CLEAN")
+
+    return clean_results
