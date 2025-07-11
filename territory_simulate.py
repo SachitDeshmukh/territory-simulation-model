@@ -63,8 +63,8 @@ class NetLogoSim:
             results = {
                 "Combo": combo_serial,
                 "Iteration": iter+1,
-                "Blue-Count-start": combo.get("num-green-clan"),
-                "Green-Count-start": combo.get("num-blue-clan")
+                "Green-Count-start": combo.get("num-green-clan"),
+                "Blue-Count-start": combo.get("num-blue-clan")
                 }
 
             for tick_target in range(self.tick_start, self.max_ticks, self.tick_step):
@@ -136,9 +136,9 @@ def simulate():
     logging.info("ALL SIMULATIONS COMPLETE.")
 
     territory_results = simulation.filter_params(iter_data)
-    save_data(territory_results, backup_file_name="Territory_output_raw", sheet_prefix="RAW")
+    save_data(territory_results, backup_file_name="Territory_output_raw", sheet_prefix="H00_RAW")
 
     clean_results = simulation.clean_data_ratio(territory_results)
-    save_data(clean_results, backup_file_name="Territory_output_clean", sheet_prefix="CLEAN")
+    save_data(clean_results, backup_file_name="Territory_output_clean", sheet_prefix="H00_CLEAN")
 
     return clean_results
