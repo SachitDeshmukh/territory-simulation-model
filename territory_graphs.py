@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt  # Plotting graphs with Matplotlib
 import pandas as pd  # Import Pandas for data processing
 import seaborn as sns  # Enhanced visualization with Seaborn
 import logging  # Logging setup for monitoring execution
-import territory_simulate # Importing the simulation module
+import territory_config # Importing the simulation module
 
 # Generate scatter plot for results visualization
 """def gen_graph(X_data, Y_data_1, Y_data_2):
@@ -30,7 +30,7 @@ import territory_simulate # Importing the simulation module
 def load_data():
     while True:
         file_input = input("Please enter the name of Excel file with the data: ")
-        if os.path.exists(os.path.join(territory_simulate.MAIN_DIR, file_input)) == False:
+        if os.path.exists(os.path.join(territory_config.main_dir, file_input)) == False:
             print("This file name is incorrect.")
             continue
         else:    
