@@ -23,7 +23,7 @@ def gen_param_combos(all_params):
 def save_data(data, backup_file_name, sheet_prefix):
     data.to_csv(f"{backup_file_name}.csv")
 
-    xlsx_file_name = f"{territory_config.excel_file_name}_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+    xlsx_file_name = f"{territory_config.file_name}_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
 
     mode = 'a' if os.path.exists(xlsx_file_name) else 'w'
     with pd.ExcelWriter(xlsx_file_name, mode=mode, engine='openpyxl') as writer:
