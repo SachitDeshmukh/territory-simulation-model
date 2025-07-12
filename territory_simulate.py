@@ -9,15 +9,7 @@ from itertools import product  # Cartesian product for param combinations
 from joblib import Parallel, delayed  # Parallel execution for simulations
 from pynetlogo import NetLogoLink  # Interface for NetLogo simulations
 
-MAIN_DIR = r"C:\Users\Sachit Deshmukh\Documents\Python Scripts\Territory-model-Ishwari"
-INPUT_PARAMS = {
-            "num-green-clan": [15, 20, 25, 30],
-            "num-blue-clan": [15, 20, 25, 30],
-            "green-hostile?": [False],
-            "yellow-hostile?": [False],
-            "blue-hostile?": [False],
-            "red-hostile?": [False]
-        }
+import territory_config # To import all GLOBALS
 
 # Function to introduce a delay
 def rest():
@@ -31,7 +23,7 @@ def gen_param_combos(all_params):
 def save_data(data, backup_file_name, sheet_prefix):
     data.to_csv(f"{backup_file_name}.csv")
 
-    xlsx_file_name = f"NETLOGO_Territory-12_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+    xlsx_file_name = f"{territory_config.excel_file_name}_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
 
     mode = 'a' if os.path.exists(xlsx_file_name) else 'w'
     with pd.ExcelWriter(xlsx_file_name, mode=mode, engine='openpyxl') as writer:
@@ -45,13 +37,13 @@ class NetLogoSim:
         self.params = parameters  # Store parameter combinations
         self.runs = runs  # Define the number of simulation runs
         self.max_ticks = ticks
-        self.tick_start = 0
-        self.tick_step = 50
+        self.tick_start = territory_config.tick_start
+        self.tick_step = territory_config.tick_step
 
     # Run simulation for a parameter combination
     def params_stability(self, combo, iter):
-        netlogo = NetLogoLink(gui=False, netlogo_home=r"C:\Users\Sachit Deshmukh\AppData\Local\NetLogo")
-        netlogo.load_model(r"C:\Users\Sachit Deshmukh\Documents\Python Scripts\Territory-model-Ishwari\12-Territory-model-with-multiple-clans.nlogo")
+        netlogo = NetLogoLink(gui=False, netlogo_home=territory_config.netlogo_exe)
+        netlogo.load_model(territory_config.model)
 
         combo_serial = self.params.index(combo)
         try:
@@ -111,17 +103,17 @@ class NetLogoSim:
 
 # Main execution function
 def simulate():
-    os.chdir(MAIN_DIR)  # Change working directory to main directory
+    os.chdir(territory_config.main_dir)  # Change working directory to main directory
 
     if not jpype.isJVMStarted():
         jpype.startJVM()  # Start Java Virtual Machine
 
     try:
         logging.info(f"Starting iteration...")
-        param_combinations = gen_param_combos(INPUT_PARAMS)
+        param_combinations = gen_param_combos(territory_config.input_parameters)
         start_time_temp = datetime.now()
-        simulation = NetLogoSim(param_combinations, runs=20, ticks=301)  # Initialize simulation object
-        iter_data = Parallel(n_jobs=6, backend="multiprocessing")(
+        simulation = NetLogoSim(param_combinations, runs=territory_config.runs, ticks=territory_config.max_ticks)  # Initialize simulation object
+        iter_data = Parallel(n_jobs=territory_config.parallel_jobs, backend="multiprocessing")(
             delayed(simulation.params_stability)(combo, x) for combo in simulation.params for x in range(simulation.runs)
         )  # Run simulations in parallel
         end_time_temp = datetime.now()
