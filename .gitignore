@@ -2,7 +2,7 @@ __pycache__
 **/*.xlsx
 **/*.csv
 **/*.xml
-**/*.md
 **/*.txt
 **/*.png
 territory_config.py
+TODO.md
