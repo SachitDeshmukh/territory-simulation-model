@@ -28,7 +28,7 @@ def main():
             results = territory_simulate.simulate() # simulate the NETLOGO model if not simulated before
         else:
             results = territory_graphs.load_data() # load pre-existing data from Excel sheet
-        territory_graphs.test_function(results)
+        territory_graphs.gen_graphs(results)
         GEN_GRAPH = False
     else:
         if not SIM_DONE:
