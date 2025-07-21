@@ -5,3 +5,4 @@ __pycache__
 **/*.txt
 **/*.png
 territory_config.py
+TODO.md
